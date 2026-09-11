@@ -33,7 +33,7 @@ class ConfigTests(unittest.TestCase):
             # write_config uses default hosts_path unless env is set; check file body instead
             text = path.read_text()
             self.assertIn("[[hosts]]", text)
-            self.assertNotIn("baoleiji", text)
+            self.assertNotIn("internal.example", text)
 
     def test_missing_base_url(self):
         with tempfile.TemporaryDirectory() as tmp:
