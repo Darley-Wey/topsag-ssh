@@ -1,0 +1,16 @@
+base_url = "https://bastion.example.com"
+username = "alice@default"
+insecure = false
+language = "zh-cn"
+
+[[hosts]]
+name = "web"
+asset_index = 0
+account_index = 0
+protocol = "SSH"
+
+# Optional: select by asset name or IP instead of index
+# [[hosts]]
+# name = "db"
+# asset_name = "postgres-prod"
+# protocol = "SSH"

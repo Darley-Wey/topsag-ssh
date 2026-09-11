@@ -1,0 +1,3 @@
+requests>=2.31,<3
+# Pillow is optional; it enables local captcha OCR. Manual entry still works without it.
+Pillow>=10,<13
