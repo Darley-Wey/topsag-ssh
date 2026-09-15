@@ -25,6 +25,32 @@ if [[ -f "$ITERM_PROFILE" ]]; then
     rm -f "$ITERM_PROFILE"
 fi
 
+wrapper="${TOPSAG_SSH_LOCAL_BIN:-$HOME/.local/bin}/ssh"
+if [[ -f "$wrapper" ]] && grep -q "PATH wrapper for topsag-ssh" "$wrapper"; then
+    print "Removing $wrapper"
+    rm -f "$wrapper"
+fi
+
+zshenv="${TOPSAG_SSH_ZSHENV:-$HOME/.zshenv}"
+if [[ -f "$zshenv" ]]; then
+    /usr/bin/python3 - "$zshenv" <<'PY'
+import pathlib, sys
+path = pathlib.Path(sys.argv[1])
+text = path.read_text()
+kept = []
+skip = 0
+for line in text.splitlines(True):
+    if "topsag-ssh PATH" in line:
+        skip = 1
+        continue
+    if skip:
+        skip = 0
+        continue
+    kept.append(line)
+path.write_text("".join(kept))
+PY
+fi
+
 if [[ -f "$ZSHRC" ]]; then
     /usr/bin/python3 - "$ZSHRC" "$PREFIX/shell/ssh-proxy.zsh" <<'PY'
 import pathlib, sys

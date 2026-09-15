@@ -42,6 +42,8 @@ ssh web 'hostname; uptime'
 ssh -o BatchMode=yes -o ConnectTimeout=8 web 'cat /etc/hosts'
 ```
 
+Install puts a wrapper at `~/.local/bin/ssh` and prepends that directory to PATH from `~/.zshenv`, so any tool that finds `ssh` on PATH is covered: new terminals, `zsh -c`, Python `subprocess`, and Git's SSH calls. It is not a replacement for `/usr/bin/ssh`. GUI apps that ignore your shell PATH still call the system binary.
+
 Only names listed in `~/.config/topsag-ssh/hosts` are intercepted. `ssh -V` and normal hosts still use system SSH.
 
 One-shot commands force a PTY. This bastion drops non-TTY exec sessions around 8KB of stdout.

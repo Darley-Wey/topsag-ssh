@@ -27,6 +27,8 @@ grep -q 'ssh-proxy.zsh' "$TOPSAG_SSH_ZSHRC"
 [[ -d "$HOME/Applications/AgentJump.app" ]]
 /usr/bin/plutil -p "$HOME/Applications/AgentJump.app/Contents/Info.plist" | grep -q agent
 [[ -x "$TOPSAG_SSH_PREFIX/macos/agent_jump.py" ]]
+[[ -x "$HOME/.local/bin/ssh" ]]
+grep -q "PATH wrapper for topsag-ssh" "$HOME/.local/bin/ssh"
 [[ -f "$HOME/Library/Application Support/iTerm2/DynamicProfiles/topsag-ssh.json" ]]
 if grep -q internal.example "$TOPSAG_SSH_CONFIG"; then
     print -u2 "company URL leaked into config"

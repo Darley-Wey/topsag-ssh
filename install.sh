@@ -55,7 +55,8 @@ copy_tree() {
     /usr/bin/ditto "$REPO_ROOT/macos" "$PREFIX/macos"
     /usr/bin/ditto "$REPO_ROOT/shell" "$PREFIX/shell"
     /usr/bin/ditto "$REPO_ROOT/share" "$PREFIX/share"
-    chmod +x "$PREFIX/python/topsag_ssh.py" "$PREFIX/macos/agent_jump.py"
+    /usr/bin/ditto "$REPO_ROOT/bin" "$PREFIX/bin"
+    chmod +x "$PREFIX/python/topsag_ssh.py" "$PREFIX/macos/agent_jump.py" "$PREFIX/bin/ssh"
 }
 
 ensure_python_deps() {
@@ -148,16 +149,37 @@ install_agentjump() {
     }
 }
 
+install_path_wrapper() {
+    local bin_dir="${TOPSAG_SSH_LOCAL_BIN:-$HOME/.local/bin}"
+    mkdir -p "$bin_dir"
+    /usr/bin/install -m 755 "$PREFIX/bin/ssh" "$bin_dir/ssh"
+    print "Installed $bin_dir/ssh"
+}
+
+ensure_dotfile_path() {
+    local file="$1"
+    local marker="# topsag-ssh PATH"
+    local line='if [ -d "$HOME/.local/bin" ]; then PATH="$HOME/.local/bin:$PATH"; fi'
+    mkdir -p "$(dirname "$file")"
+    touch "$file"
+    if grep -F "topsag-ssh PATH" "$file" >/dev/null 2>&1; then
+        return
+    fi
+    print "\n$marker\n$line" >> "$file"
+    print "Added PATH helper to $file"
+}
+
 install_zshrc() {
     local line="source \"$PREFIX/shell/ssh-proxy.zsh\""
     mkdir -p "$(dirname "$ZSHRC")"
     touch "$ZSHRC"
     if grep -F "$PREFIX/shell/ssh-proxy.zsh" "$ZSHRC" >/dev/null 2>&1; then
         print "zshrc already sources ssh-proxy.zsh"
-        return
+    else
+        print "\n# topsag-ssh\n$line" >> "$ZSHRC"
+        print "Added source line to $ZSHRC"
     fi
-    print "\n# topsag-ssh\n$line" >> "$ZSHRC"
-    print "Added source line to $ZSHRC"
+    ensure_dotfile_path "${TOPSAG_SSH_ZSHENV:-$HOME/.zshenv}"
 }
 
 install_iterm_profile() {
@@ -176,7 +198,7 @@ install_iterm_profile() {
       "Name": "TopSAG SSH",
       "Guid": "$GUID",
       "Custom Command": "Yes",
-      "Command": "/bin/zsh -lc 'source \"$PREFIX/shell/ssh-proxy.zsh\"; ssh $host_name'",
+      "Command": "/bin/zsh -lc 'ssh $host_name'",
       "Badge Text": "TopSAG"
     }
   ]
@@ -191,6 +213,7 @@ ensure_python_deps
 write_config_wizard
 save_password
 install_agentjump
+install_path_wrapper
 install_zshrc
 install_iterm_profile
 print

@@ -1,0 +1,90 @@
+#!/bin/sh
+# PATH wrapper for topsag-ssh. Intercepts configured host names only.
+# All other destinations are passed to the real OpenSSH client.
+
+set -eu
+
+real_ssh="${TOPSAG_REAL_SSH:-/usr/bin/ssh}"
+prefix="${TOPSAG_SSH_PREFIX:-$HOME/.local/share/topsag-ssh}"
+hosts_file="${TOPSAG_SSH_HOSTS_FILE:-$HOME/.config/topsag-ssh/hosts}"
+python="${TOPSAG_SSH_PYTHON:-/usr/bin/python3}"
+
+case "$real_ssh" in
+    */.local/bin/ssh|*/topsag-ssh/bin/ssh)
+        real_ssh=/usr/bin/ssh
+        ;;
+esac
+
+is_managed() {
+    host="$1"
+    [ -n "$host" ] || return 1
+    if [ -n "${TOPSAG_SSH_HOSTS:-}" ]; then
+        for candidate in $TOPSAG_SSH_HOSTS; do
+            [ "$candidate" = "$host" ] && return 0
+        done
+        return 1
+    fi
+    [ -f "$hosts_file" ] || return 1
+    grep -Fx "$host" "$hosts_file" >/dev/null 2>&1
+}
+
+dest=""
+parse_dest() {
+    dest=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --)
+                shift
+                dest="${1:-}"
+                return 0
+                ;;
+            -o|-p|-l|-i|-F|-J|-E|-b|-c|-D|-e|-I|-m|-Q|-R|-W|-w|-B)
+                if [ $# -lt 2 ]; then
+                    return 0
+                fi
+                shift 2
+                ;;
+            -*)
+                shift
+                ;;
+            *)
+                dest="$1"
+                return 0
+                ;;
+        esac
+    done
+}
+
+parse_dest "$@"
+
+if is_managed "$dest"; then
+    script="$prefix/python/topsag_ssh.py"
+    if [ ! -f "$script" ]; then
+        echo "topsag-ssh is not installed. Run install.sh from the repository." >&2
+        exit 2
+    fi
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --)
+                shift
+                break
+                ;;
+            -o|-p|-l|-i|-F|-J|-E|-b|-c|-D|-e|-I|-m|-Q|-R|-W|-w|-B)
+                shift 2
+                ;;
+            -*)
+                shift
+                ;;
+            *)
+                shift
+                break
+                ;;
+        esac
+    done
+    if [ $# -eq 0 ]; then
+        exec "$python" -W ignore "$script" --host "$dest"
+    fi
+    exec "$python" -W ignore "$script" --host "$dest" --remote-command "$*"
+fi
+
+exec "$real_ssh" "$@"
